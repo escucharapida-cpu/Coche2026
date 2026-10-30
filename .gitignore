@@ -1,0 +1,13 @@
+# Dependencies
+node_modules/
+dist/
+build/
+*.apk
+*.aab
+.env
+.env.local
+!.env.example
+*.log
+.DS_Store
+.idea/
+.dart_tool/

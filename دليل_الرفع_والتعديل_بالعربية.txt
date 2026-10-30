@@ -1,0 +1,16 @@
+مرحباً بك!
+هذا المجلد يحتوي على ملفات تطبيق CarShield كاملة وجاهزة للرفع إلى GitHub والتعديل على الهاتف.
+
+خطوات الرفع:
+1. أنشئ مستودعاً جديداً على موقع github.com
+2. فك ضغط هذا الملف
+3. افتح موجه الأوامر واكتب الأوامر التالية:
+   git init
+   git add .
+   git commit -m "first commit"
+   git branch -M main
+   git remote add origin رابط_مستودعك
+   git push -u origin main
+
+للتعديل من الهاتف:
+- افتح المستودع على GitHub واضغط زر '.' لفتحه في محرر VS Code السحابي.
