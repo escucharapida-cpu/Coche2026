@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>CarShield</string>
+    <key>CFBundleDisplayName</key>
+    <string>درع السيارة</string>
+
+    <!-- إذن الكاميرا الإلزامي لمسح الـ QR -->
+    <key>NSCameraUsageDescription</key>
+    <string>نحتاج إلى إذن استخدام الكاميرا لمسح ملصقات الـ QR على السيارات وإرسال التنبيهات لأصحابها.</string>
+
+    <!-- دعم استقبال إشعارات الطوارئ في الخلفية -->
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>fetch</string>
+        <string>remote-notification</string>
+    </array>
+</dict>
+</plist>

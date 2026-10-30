@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. بيانات المستخدم الخاصة (رقم الهاتف الحقيقي، توكن الإشعارات FCM)
+    // لا يمكن لأي شخص آخر الوصول إليها مطلقاً!
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      // سيارات المستخدم الخاصة
+      match /cars/{carId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // التنبيهات المستلمة للسيارة
+      match /received_alerts/{alertId} {
+        allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+        allow create: if false; // فقط Cloud Functions هي التي تنشئ التنبيه هنا
+      }
+    }
+
+    // 2. الفهرس العام لرموز الـ QR (cars_public)
+    // يسمح لأي شخص بالبحث برمز الـ qrToken لمعرفة تفاصيل السيارة
+    // ولكن لا يسمح له بقراءة رقم الهاتف أو FCM Token
+    match /cars_public/{qrToken} {
+      allow read: if true;
+      allow create: if request.auth != null && request.resource.data.ownerUid == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.ownerUid == request.auth.uid;
+    }
+
+    // 3. التنبيهات الواردة (alerts)
+    // يسمح لأي ماسح (حتى كضيف) بإنشاء طلب تنبيه للسيارة
+    // وتقوم Cloud Function بمعالجته وإرسال الـ Push Notification
+    match /alerts/{alertId} {
+      allow create: if request.resource.data.qrToken is string 
+                    && request.resource.data.alertType is string;
+      allow read, update, delete: if false; // يمنع استعراض أو تعديل التنبيهات من الخارج
+    }
+  }
+}

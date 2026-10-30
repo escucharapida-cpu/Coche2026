@@ -1,0 +1,9 @@
+defaultConfig {
+    applicationId "com.example.carshield"
+    // يجب ألا يقل عن 21 لتشغيل كاميرا الـ QR وقارئ mobile_scanner
+    minSdkVersion 21
+    targetSdkVersion 34
+    versionCode flutterVersionCode.toInteger()
+    versionName flutterVersionName
+    multiDexEnabled true
+}

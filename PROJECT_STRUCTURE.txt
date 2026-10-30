@@ -1,0 +1,27 @@
+my_car_privacy_app/
+├── android/
+│   └── app/src/main/AndroidManifest.xml
+├── ios/
+│   └── Runner/Info.plist
+├── lib/
+│   ├── main.dart
+│   ├── models/
+│   │   ├── car_qr_model.dart
+│   │   └── alert_model.dart
+│   ├── services/
+│   │   ├── firebase_service.dart
+│   │   └── fcm_service.dart
+│   ├── screens/
+│   │   ├── car_dashboard_screen.dart
+│   │   ├── qr_generator_screen.dart
+│   │   └── qr_scanner_screen.dart
+│   ├── widgets/
+│   │   ├── car_sticker_widget.dart
+│   │   └── quick_alert_sheet.dart
+│   └── utils/
+│       └── app_theme.dart
+├── functions/
+│   ├── index.js
+│   └── package.json
+├── firestore.rules
+└── pubspec.yaml
