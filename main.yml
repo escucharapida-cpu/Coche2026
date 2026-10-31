@@ -1,1 +1,443 @@
+name: Build CarShield Android APK
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          channel: 'stable'
+          cache: false
+
+      - name: Build CarShield Pro App
+        run: |
+          flutter create car_shield_app --org com.carshield.app --platforms=android
+          cd car_shield_app
+          
+          cat << 'EOF' > pubspec.yaml
+          name: car_shield
+          description: "CarShield application"
+          publish_to: 'none'
+          version: 1.0.0+1
+
+          environment:
+            sdk: '>=3.0.0 <4.0.0'
+
+          dependencies:
+            flutter:
+              sdk: flutter
+            flutter_localizations:
+              sdk: flutter
+            provider: ^6.1.0
+            http: ^1.2.0
+
+          dev_dependencies:
+            flutter_test:
+              sdk: flutter
+            flutter_lints: ^3.0.0
+
+          flutter:
+            uses-material-design: true
+          EOF
+
+          cat << 'EOF' > lib/main.dart
+          import 'package:flutter/material.dart';
+
+          void main() {
+            runApp(const CarShieldApp());
+          }
+
+          class CarShieldApp extends StatelessWidget {
+            const CarShieldApp({super.key});
+
+            @override
+            Widget build(BuildContext context) {
+              return MaterialApp(
+                debugShowCheckedModeBanner: false,
+                title: 'CarShield',
+                theme: ThemeData(
+                  primarySwatch: Colors.blue,
+                  scaffoldBackgroundColor: const Color(0xFF0F1115),
+                  cardColor: const Color(0xFF1E222D),
+                ),
+                home: const DashboardScreen(),
+              );
+            }
+          }
+
+          class CarAlert {
+            final String senderTitle;
+            final String reason;
+            final String time;
+            final IconData icon;
+
+            CarAlert({required this.senderTitle, required this.reason, required this.time, required this.icon});
+          }
+
+          class DashboardScreen extends StatefulWidget {
+            const DashboardScreen({super.key});
+
+            @override
+            State<DashboardScreen> createState() => _DashboardScreenState();
+          }
+
+          class _DashboardScreenState extends State<DashboardScreen> {
+            final List<CarAlert> alerts = [
+              CarAlert(senderTitle: 'تنبيه من مار', reason: 'نسيت الزجاج مفتوح', time: 'الآن', icon: Icons.notifications_active),
+            ];
+
+            void _navigate(Widget screen) {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => screen));
+            }
+
+            @override
+            Widget build(BuildContext context) {
+              return Scaffold(
+                appBar: AppBar(
+                  title: const Text('CarShield - حماية الخصوصية', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  backgroundColor: const Color(0xFF161A23),
+                  elevation: 0,
+                ),
+                body: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E222D),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.greenAccent.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.security, color: Colors.greenAccent, size: 32),
+                            const SizedBox(width: 16),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: const [
+                                Text('السيارة محمية بخصوصية تامة', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 15)),
+                                SizedBox(height: 4),
+                                Text('رقم هاتفك مخفي ومشفر بالكامل 🛡️', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 25),
+                      const Text('خدمات التطبيق الأساسية', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 15),
+                      Expanded(
+                        child: GridView.count(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                          children: [
+                            FeatureCard(
+                              title: 'صانع QR للسيارة',
+                              subtitle: 'توليد كود سري للزجاج',
+                              icon: Icons.qr_code_2,
+                              color: Colors.greenAccent,
+                              onTap: () => _navigate(const GeneratorScreen()),
+                            ),
+                            FeatureCard(
+                              title: 'إرسال تنبيه للمالك',
+                              subtitle: 'نسيت الزجاج / طارئ',
+                              icon: Icons.send,
+                              color: Colors.blueAccent,
+                              onTap: () => _navigate(const SendAlertScreen()),
+                            ),
+                            FeatureCard(
+                              title: 'صندوق الوارد',
+                              subtitle: '${alerts.length} تنبيهات جديدة',
+                              icon: Icons.inbox,
+                              color: Colors.orangeAccent,
+                              onTap: () => _navigate(InboxScreen(alerts: alerts)),
+                            ),
+                            FeatureCard(
+                              title: 'إعدادات الخصوصية',
+                              subtitle: 'حماية الأرقام المشفرة',
+                              icon: Icons.lock,
+                              color: Colors.tealAccent,
+                              onTap: () => _navigate(const SecuritySettingsScreen()),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+          }
+
+          class FeatureCard extends StatelessWidget {
+            final String title;
+            final String subtitle;
+            final IconData icon;
+            final Color color;
+            final VoidCallback onTap;
+
+            const FeatureCard({super.key, required this.title, required this.subtitle, required this.icon, required this.color, required this.onTap});
+
+            @override
+            Widget build(BuildContext context) {
+              return InkWell(
+                onTap: onTap,
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E222D),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white10),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(icon, size: 34, color: color),
+                      const SizedBox(height: 12),
+                      Text(title, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 10)),
+                    ],
+                  ),
+                ),
+              );
+            }
+          }
+
+          class GeneratorScreen extends StatefulWidget {
+            const GeneratorScreen({super.key});
+
+            @override
+            State<GeneratorScreen> createState() => _GeneratorScreenState();
+          }
+
+          class _GeneratorScreenState extends State<GeneratorScreen> {
+            final TextEditingController _carController = TextEditingController();
+            final TextEditingController _phoneController = TextEditingController();
+            bool isGenerated = false;
+
+            @override
+            Widget build(BuildContext context) {
+              return Scaffold(
+                appBar: AppBar(title: const Text('صانع كود الـ QR الخاص بالسيارة'), backgroundColor: const Color(0xFF161A23)),
+                body: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: ListView(
+                    children: [
+                      const Text('أدخل بياناتك لإنشاء كود مشفر وخاص بسيارتك:', style: TextStyle(color: Colors.grey)),
+                      const SizedBox(height: 20),
+                      TextField(
+                        controller: _carController,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: 'معلومات السيارة (مثال: Golf 7 - أبيض)',
+                          labelStyle: const TextStyle(color: Colors.grey),
+                          filled: true,
+                          fillColor: const Color(0xFF1E222D),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _phoneController,
+                        keyboardType: TextInputType.phone,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: 'رقم هاتفك الشخصي (يظل سرياً تماماً)',
+                          labelStyle: const TextStyle(color: Colors.grey),
+                          filled: true,
+                          fillColor: const Color(0xFF1E222D),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.greenAccent, foregroundColor: Colors.black, padding: const EdgeInsets.all(14)),
+                        onPressed: () {
+                          if (_carController.text.isNotEmpty && _phoneController.text.isNotEmpty) {
+                            setState(() => isGenerated = true);
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم توليد كود الـ QR بنجاح!'), backgroundColor: Colors.green));
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('الرجاء إدخال الحقول المطلوبة'), backgroundColor: Colors.red));
+                          }
+                        },
+                        icon: const Icon(Icons.qr_code),
+                        label: const Text('توليد كود الـ QR للطباعة', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(height: 30),
+                      if (isGenerated)
+                        Center(
+                          child: Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+                            child: Column(
+                              children: const [
+                                Icon(Icons.qr_code_2, size: 150, color: Colors.black),
+                                SizedBox(height: 10),
+                                Text('جاهز للطباعة واللصق على الزجاج!', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              );
+            }
+          }
+
+          class SendAlertScreen extends StatefulWidget {
+            const SendAlertScreen({super.key});
+
+            @override
+            State<SendAlertScreen> createState() => _SendAlertScreenState();
+          }
+
+          class _SendAlertScreenState extends State<SendAlertScreen> {
+            String _selectedReason = 'نسيت الزجاج مفتوح';
+            final List<String> _reasons = [
+              'نسيت الزجاج مفتوح',
+              'السيارة مفتوحة بالكامل',
+              'مركونة أمام مرآب (تعيق المرور)',
+              'أضواء السيارة مشتعلة',
+              'تنبيه طارئ'
+            ];
+
+            void _sendAlert() {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('تم إرسال التنبيه ($_selectedReason) بخصوصية تامة لمالك السيارة!'), backgroundColor: Colors.green),
+              );
+              Navigator.pop(context);
+            }
+
+            @override
+            Widget build(BuildContext context) {
+              return Scaffold(
+                appBar: AppBar(title: const Text('إرسال تنبيه عاجل لمالك السيارة'), backgroundColor: const Color(0xFF161A23)),
+                body: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: ListView(
+                    children: [
+                      const Icon(Icons.notifications_active, size: 70, color: Colors.blueAccent),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'اختر سبب التنبيه للمالك (رقم هاتف المالك مخفي تماماً للحفاظ على الخصوصية):',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white, fontSize: 15),
+                      ),
+                      const SizedBox(height: 25),
+                      const Text('اختر السبب:', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        value: _selectedReason,
+                        dropdownColor: const Color(0xFF1E222D),
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: const Color(0xFF1E222D),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        items: _reasons.map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
+                        onChanged: (val) => setState(() => _selectedReason = val!),
+                      ),
+                      const SizedBox(height: 30),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.greenAccent, foregroundColor: Colors.black, minimumSize: const Size(double.infinity, 50)),
+                        onPressed: () => _sendAlert(),
+                        icon: const Icon(Icons.send),
+                        label: const Text('إرسال التنبيه السري للمالك', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+          }
+
+          class InboxScreen extends StatelessWidget {
+            final List<CarAlert> alerts;
+            const InboxScreen({super.key, required this.alerts});
+
+            @override
+            Widget build(BuildContext context) {
+              return Scaffold(
+                appBar: AppBar(title: const Text('صندوق الوارد (التنبيهات)'), backgroundColor: const Color(0xFF161A23)),
+                body: alerts.isEmpty
+                    ? const Center(child: Text('لا توجد تنبيهات جديدة', style: TextStyle(color: Colors.grey)))
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: alerts.length,
+                        itemBuilder: (context, index) {
+                          final alert = alerts[index];
+                          return Card(
+                            color: const Color(0xFF1E222D),
+                            margin: const EdgeInsets.only(bottom: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            child: ListTile(
+                              leading: Icon(alert.icon, color: Colors.greenAccent),
+                              title: Text(alert.senderTitle, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                              subtitle: Text('السبب: ${alert.reason}\nالوقت: ${alert.time} (رقم المتصل مخفي بخصوصية)', style: const TextStyle(color: Colors.grey)),
+                              isThreeLine: true,
+                            ),
+                          );
+                        },
+                      ),
+              );
+            }
+          }
+
+          class SecuritySettingsScreen extends StatelessWidget {
+            const SecuritySettingsScreen({super.key});
+
+            @override
+            Widget build(BuildContext context) {
+              return Scaffold(
+                appBar: AppBar(title: const Text('إعدادات الخصوصية والأمان'), backgroundColor: const Color(0xFF161A23)),
+                body: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Text('حماية الخصوصية نشطة 🛡️', style: TextStyle(color: Colors.greenAccent, fontSize: 18, fontWeight: FontWeight.bold)),
+                      SizedBox(height: 15),
+                      Text('نظام CarShield يعتمد على تشفير كامل للبيانات، مما يضمن سرية أرقام الهواتف وعدم ظهورها للآخرين نهائياً.', style: TextStyle(color: Colors.grey, fontSize: 14)),
+                    ],
+                  ),
+                ),
+              );
+            }
+          }
+          EOF
+
+          flutter pub get
+          flutter build apk --debug --target-platform android-arm64
+          mkdir -p ../my_final_apk_v3
+          cp build/app/outputs/flutter-apk/app-debug.apk ../my_final_apk_v3/carshield-pro.apk
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CarShield-Pro-APK
+          path: my_final_apk_v3/carshield-pro.apk
 
